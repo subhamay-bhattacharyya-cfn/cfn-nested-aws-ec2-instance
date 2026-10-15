@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'Nested CloudFormation template to create an EC2 instance with optional instance profile and Base64 user data'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: "Project name used in the instance Name tag"
+    MinLength: 1
+    MaxLength: 20
+    AllowedPattern: "^[a-z0-9-]+$"
+    ConstraintDescription: "Project name must be lowercase letters, numbers, and hyphens only"
+
+  environment:
+    Type: String
+    Default: devl
+    Description: "Deployment environment for the EC2 instance"
+
+  CiSuffix:
+    Type: String
+    Default: ""
+    Description: "Optional CI suffix to append to the instance Name tag"
+
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: "AMI ID, or SSM parameter holding the AMI ID (defaults to latest Amazon Linux 2023)"
+
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    Description: "EC2 instance type"
+
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: "Subnet in which to launch the instance"
+
+  SecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: "Security group IDs to attach to the instance"
+
+  InstanceRoleName:
+    Type: String
+    Default: ""
+    Description: "Optional name of an existing IAM role. If provided, an instance profile is created for it and attached to the instance"
+    AllowedPattern: "^$|^[\\w+=,.@-]{1,64}$"
+    ConstraintDescription: "Must be an IAM role name (up to 64 characters, no ARN)"
+
+  UserDataBase64:
+    Type: String
+    Default: ""
+    Description: "Optional user data script, already Base64 encoded. It is passed to the instance as-is"
+    MaxLength: 4096
+    AllowedPattern: "^$|^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+    ConstraintDescription: "Must be a valid Base64 string"
+
+Conditions:
+  HasCiSuffix: !Not [!Equals [!Ref CiSuffix, ""]]
+  HasInstanceRole: !Not [!Equals [!Ref InstanceRoleName, ""]]
+  HasUserData: !Not [!Equals [!Ref UserDataBase64, ""]]
+
+Resources:
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Condition: HasInstanceRole
+    Properties:
+      Roles:
+        - !Ref InstanceRoleName
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds: !Ref SecurityGroupIds
+      IamInstanceProfile: !If
+        - HasInstanceRole
+        - !Ref InstanceProfile
+        - !Ref AWS::NoValue
+      UserData: !If
+        - HasUserData
+        - !Ref UserDataBase64
+        - !Ref AWS::NoValue
+      MetadataOptions:
+        HttpTokens: required
+        HttpEndpoint: enabled
+      Tags:
+        - Key: Name
+          Value: !If
+            - HasCiSuffix
+            - !Sub '${ProjectName}-ec2-${environment}-${CiSuffix}'
+            - !Sub '${ProjectName}-ec2-${environment}'
+        - Key: Environment
+          Value: !Ref environment
+
+Outputs:
+  InstanceId:
+    Description: "ID of the EC2 instance"
+    Value: !Ref Instance
+    Export:
+      Name: !Sub "${AWS::StackName}-InstanceId"
+
+  InstancePrivateIp:
+    Description: "Private IP address of the EC2 instance"
+    Value: !GetAtt Instance.PrivateIp
+    Export:
+      Name: !Sub "${AWS::StackName}-InstancePrivateIp"
+
+  InstanceProfileArn:
+    Condition: HasInstanceRole
+    Description: "ARN of the instance profile attached to the EC2 instance"
+    Value: !GetAtt InstanceProfile.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-InstanceProfileArn"

@@ -1,21 +1,78 @@
 # CloudFormation S3 Template Repository
 
 <!-- Row 1: Status - Most Important -->
-[![Release](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/actions/workflows/release.yaml/badge.svg)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template)&nbsp;[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template)&nbsp;[![Issues](https://img.shields.io/github/issues/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/issues)&nbsp;[![Last Commit](https://img.shields.io/github/last-commit/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/commits)
+[![Release](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance/actions/workflows/release.yaml/badge.svg)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)&nbsp;[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)&nbsp;[![Issues](https://img.shields.io/github/issues/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance/issues)&nbsp;[![Last Commit](https://img.shields.io/github/last-commit/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance/commits)
 
 <!-- Row 2: Code Quality -->
-[![Top Language](https://img.shields.io/github/languages/top/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template)&nbsp;[![Commits](https://img.shields.io/github/commit-activity/t/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/commits)
+[![Top Language](https://img.shields.io/github/languages/top/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)&nbsp;[![Commits](https://img.shields.io/github/commit-activity/t/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance/commits)
 
 <!-- Row 3: Tech Stack -->
 [![CloudFormation](https://img.shields.io/badge/CloudFormation-IaC-orange?logo=amazon&logoColor=white)](https://aws.amazon.com/cloudformation/)&nbsp;[![Built with Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-D97757?logo=anthropic&logoColor=white)](https://claude.ai/)
 
 <!-- Row 4: Repository Info -->
-[![Files](https://img.shields.io/github/directory-file-count/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template)&nbsp;[![Repo Size](https://img.shields.io/github/repo-size/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template)&nbsp;[![Release Date](https://img.shields.io/github/release-date/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/releases)
+[![Files](https://img.shields.io/github/directory-file-count/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)&nbsp;[![Repo Size](https://img.shields.io/github/repo-size/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)&nbsp;[![Release Date](https://img.shields.io/github/release-date/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance/releases)
 
 <!-- Row 5: Custom Metrics -->
-[![Custom Endpoint](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/bsubhamay/f55f73ac88992d4bd5c9835ee5fd70b6/raw/aws-vpc-cloudformation-fundamentals.json)](https://gist.github.com/subhamay-bhattacharyya/f55f73ac88992d4bd5c9835ee5fd70b6)
+[![Custom Endpoint](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/bsubhamay/5f5b47db8b68709abe89209dcabdbeee/raw/cfn-nested-aws-ec2-instance.json)](https://gist.github.com/subhamay-bhattacharyya/5f5b47db8b68709abe89209dcabdbeee)
 
-This repository contains nested CloudFormation templates for deploying S3 buckets with security best practices and optional policy enforcement.
+## EC2 Instance Template
+
+`cloudformation/template.yaml` is a nested CloudFormation template that creates a single EC2 instance. It can optionally create an instance profile for an existing IAM role and accept Base64-encoded user data.
+
+### Features
+
+- ✅ Latest Amazon Linux 2023 AMI by default (override with an AMI ID or SSM parameter)
+- ✅ IMDSv2 required on the instance
+- ✅ Optional instance profile: if `InstanceRoleName` is set, an instance profile is created for that role and attached to the instance
+- ✅ Optional user data: `UserDataBase64` is passed to the instance as-is
+- ✅ Optional CI suffix appended to the `Name` tag
+
+### EC2 Instance Parameters
+
+| Parameter | Type | Default | Description |
+| ----------- | ------ | --------- | ------------- |
+| `ProjectName` | String | — | Project name used in the `Name` tag (required) |
+| `environment` | String | `devl` | Deployment environment |
+| `CiSuffix` | String | `""` | Optional CI suffix appended to the `Name` tag |
+| `ImageId` | AWS::EC2::Image::Id (SSM) | Latest Amazon Linux 2023 | AMI ID, or SSM parameter holding one |
+| `InstanceType` | String | `t3.micro` | EC2 instance type |
+| `SubnetId` | AWS::EC2::Subnet::Id | — | Subnet to launch the instance in (required) |
+| `SecurityGroupIds` | List<AWS::EC2::SecurityGroup::Id> | — | Security groups to attach (required) |
+| `InstanceRoleName` | String | `""` | Name of an existing IAM role (not an ARN). Creates and attaches an instance profile when set |
+| `UserDataBase64` | String | `""` | Base64-encoded user data (max 4096 characters, the CloudFormation parameter limit) |
+
+### EC2 Instance Outputs
+
+- `InstanceId` — EC2 instance ID
+- `InstancePrivateIp` — Private IP address of the instance
+- `InstanceProfileArn` — Instance profile ARN (only when `InstanceRoleName` is set)
+
+All outputs are exported as `<stack-name>-<OutputName>`.
+
+### Deploy
+
+```bash
+# Encode a user data script (macOS: base64 -i, Linux: base64 -w0)
+USER_DATA=$(base64 -i userdata.sh | tr -d '\n')
+
+aws cloudformation create-stack \
+  --stack-name cfn-ec2-instance-dev \
+  --template-body file://cloudformation/template.yaml \
+  --capabilities CAPABILITY_IAM \
+  --parameters \
+    ParameterKey=ProjectName,ParameterValue=myproject \
+    ParameterKey=environment,ParameterValue=devl \
+    ParameterKey=SubnetId,ParameterValue=subnet-0123456789abcdef0 \
+    ParameterKey=SecurityGroupIds,ParameterValue=sg-0123456789abcdef0 \
+    ParameterKey=InstanceRoleName,ParameterValue=my-ec2-role \
+    ParameterKey=UserDataBase64,ParameterValue="$USER_DATA"
+```
+
+Omit `InstanceRoleName` and `UserDataBase64` to launch an instance without an instance profile or user data. `CAPABILITY_IAM` is only needed when the instance profile is created.
+
+---
+
+This repository also contains nested CloudFormation templates for deploying S3 buckets with security best practices and optional policy enforcement.
 
 ## Overview
 
