@@ -1,4 +1,4 @@
-# CloudFormation S3 Template Repository
+# CloudFormation Nested Stack Template : EC2 Instance
 
 <!-- Row 1: Status - Most Important -->
 [![Release](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance/actions/workflows/release.yaml/badge.svg)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)&nbsp;[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)&nbsp;[![Issues](https://img.shields.io/github/issues/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance/issues)&nbsp;[![Last Commit](https://img.shields.io/github/last-commit/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance)](https://github.com/subhamay-bhattacharyya-cfn/cfn-nested-aws-ec2-instance/commits)
@@ -15,23 +15,30 @@
 <!-- Row 5: Custom Metrics -->
 [![Custom Endpoint](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/bsubhamay/5f5b47db8b68709abe89209dcabdbeee/raw/cfn-nested-aws-ec2-instance.json)](https://gist.github.com/subhamay-bhattacharyya/5f5b47db8b68709abe89209dcabdbeee)
 
+## Contents
+
+- [EC2 Instance Template](#ec2-instance-template) — launch a single EC2 instance with optional instance profile, user data, and target group registration (`cloudformation/template.yaml`)
+- [S3 Bucket Templates](#overview) — S3 bucket creation with security defaults and optional bucket policy enforcement (`templates/`)
+
 ## EC2 Instance Template
 
-`cloudformation/template.yaml` is a nested CloudFormation template that creates a single EC2 instance. It can optionally create an instance profile for an existing IAM role and accept Base64-encoded user data.
+`cloudformation/template.yaml` is a nested CloudFormation template that creates a single EC2 instance. It can optionally create an instance profile for an existing IAM role, accept Base64-encoded user data, and register the instance with an existing target group.
 
 ### Features
 
 - ✅ Latest Amazon Linux 2023 AMI by default (override with an AMI ID or SSM parameter)
 - ✅ IMDSv2 required on the instance
+- ✅ `Name` tag in the format `<ProjectName>-<InstanceBaseName>-<environment>-<AWS Region>`, with `-<CiSuffix>` appended when set
 - ✅ Optional instance profile: if `InstanceRoleName` is set, an instance profile is created for that role and attached to the instance
 - ✅ Optional user data: `UserDataBase64` is passed to the instance as-is
-- ✅ Optional CI suffix appended to the `Name` tag
+- ✅ Optional target group registration: if `TargetGroupArn` is set, the instance is registered with that target group on `TargetPort`, and deregistered when the stack is deleted
 
 ### EC2 Instance Parameters
 
 | Parameter | Type | Default | Description |
 | ----------- | ------ | --------- | ------------- |
 | `ProjectName` | String | — | Project name used in the `Name` tag (required) |
+| `InstanceBaseName` | String | `ec2` | Base name used in the `Name` tag |
 | `environment` | String | `devl` | Deployment environment |
 | `CiSuffix` | String | `""` | Optional CI suffix appended to the `Name` tag |
 | `ImageId` | AWS::EC2::Image::Id (SSM) | Latest Amazon Linux 2023 | AMI ID, or SSM parameter holding one |
@@ -40,12 +47,15 @@
 | `SecurityGroupIds` | List<AWS::EC2::SecurityGroup::Id> | — | Security groups to attach (required) |
 | `InstanceRoleName` | String | `""` | Name of an existing IAM role (not an ARN). Creates and attaches an instance profile when set |
 | `UserDataBase64` | String | `""` | Base64-encoded user data (max 4096 characters, the CloudFormation parameter limit) |
+| `TargetGroupArn` | String | `""` | ARN of an existing target group. Registers the instance when set |
+| `TargetPort` | Number | `80` | Port the target group forwards to on the instance. Used only when `TargetGroupArn` is set |
 
 ### EC2 Instance Outputs
 
 - `InstanceId` — EC2 instance ID
 - `InstancePrivateIp` — Private IP address of the instance
 - `InstanceProfileArn` — Instance profile ARN (only when `InstanceRoleName` is set)
+- `TargetGroupArn` — Target group ARN the instance is registered with (only when `TargetGroupArn` is set)
 
 All outputs are exported as `<stack-name>-<OutputName>`.
 
@@ -65,10 +75,16 @@ aws cloudformation create-stack \
     ParameterKey=SubnetId,ParameterValue=subnet-0123456789abcdef0 \
     ParameterKey=SecurityGroupIds,ParameterValue=sg-0123456789abcdef0 \
     ParameterKey=InstanceRoleName,ParameterValue=my-ec2-role \
-    ParameterKey=UserDataBase64,ParameterValue="$USER_DATA"
+    ParameterKey=UserDataBase64,ParameterValue="$USER_DATA" \
+    ParameterKey=InstanceBaseName,ParameterValue=web \
+    ParameterKey=CiSuffix,ParameterValue=build-42 \
+    ParameterKey=TargetGroupArn,ParameterValue=arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/my-tg/0123456789abcdef \
+    ParameterKey=TargetPort,ParameterValue=8080
 ```
 
-Omit `InstanceRoleName` and `UserDataBase64` to launch an instance without an instance profile or user data. `CAPABILITY_IAM` is only needed when the instance profile is created.
+With the example above, the instance is named `myproject-web-devl-us-east-1-build-42`.
+
+Omit `InstanceRoleName`, `UserDataBase64`, and `TargetGroupArn` to launch an instance without an instance profile, user data, or target group registration. `CAPABILITY_IAM` is needed when an instance profile is created or a target group is set, since the registration custom resource creates an IAM role.
 
 ---
 
