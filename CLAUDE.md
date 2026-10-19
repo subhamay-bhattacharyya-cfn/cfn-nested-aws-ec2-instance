@@ -86,7 +86,7 @@ Select `feat`, `fix`, or `chore` type. Only `feat` and `fix` trigger releases.
 This repo provides a **nested stack template**, referenced from parent/root CloudFormation stacks via `TemplateURL`. The template is self-contained and exports outputs for cross-stack references.
 
 - **Parent stack** calls: `AWS::CloudFormation::Stack` with `TemplateURL` pointing to S3
-- **Nested template** outputs values via `Outputs` section with `Export`
+- **Nested template** outputs values via the `Outputs` section
 - Parent retrieves outputs via `!GetAtt NestedStack.Outputs.OutputKey`
 
 ### Instance Name Tag
