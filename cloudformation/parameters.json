@@ -2,6 +2,5 @@
   "ProjectName": "cfn-nstd",
   "InstanceBaseName": "ci-instc",
   "Environment": "devl",
-  "KmsKey": "SB-KMS",
   "CiSuffix": ""
 }
